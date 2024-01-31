@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Values.app}}
+  namespace: {{.Values.namespace}}
+spec:
+  replicas: {{.Values.replicaCount}}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{.Values.app}}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{.Values.app}}
+        repository: {{.Values.image.repository}}
+    spec:
+      containers:
+        - name: {{.Values.app}}
+          image: {{.Values.image.name}}:{{.Values.image.tag}}
+          imagePullPolicy: {{.Values.image.pullPolicy}}
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: {{.Values.application.config.profile}}
+            - name: MDMS_SERVICE_HOST
+              value: {{.Values.application.config.mdms_url}}
+            - name: DMDM_SERVICE_HOST
+              value: {{.Values.application.config.dmdm_url}}
+            - name: IDGEN_SERVICE_HOST
+              value: {{.Values.application.config.idgen_url}}
+            - name: FILE_SERVICE_HOST
+              value: {{.Values.application.config.file_url}}
+            - name: PDF_SERVICE_HOST
+              value: {{.Values.application.config.pdf_url}}
+            - name: POSTGRES_URL
+              value: {{.Values.application.config.database_url}}
+            - name: POSTGRES_USER
+              value: {{.Values.application.config.database_user}}
+            - name: RULE_SERVICE_HOST
+              value: {{.Values.application.config.rule_url}}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_PASSWORD
+            - name: ES_URL
+              value: {{.Values.application.config.es_url}}
+            - name: ES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: es-credentials
+                  key: ES_USERNAME
+            - name: ES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: es-credentials
+                  key: ES_PASSWORD
+            - name: SERVICE_BUCKET
+              value: {{.Values.application.config.service_bucket}}
+            - name: REGISTRY_BUCKET
+              value: {{.Values.application.config.registry_bucket}}
+            - name: SERVICE_ROLE
+              value: {{.Values.serviceAccount.roleArn}}
+            - name: AWS_REGION
+              value: {{.Values.application.config.region}}
+            - name: KAFKA_SERVERS
+              value: {{.Values.application.config.kafka_servers}}
+            - name: CDN_URL
+              value: {{.Values.application.config.cdn_lb_url}}
+            - name: SMS_SERVICE_HOST
+              value: {{.Values.application.config.sms_url}}
+            - name: OTP_SERVICE_HOST
+              value: {{.Values.application.config.otp_url}}
+            - name: FIN_SERVICE_HOST
+              value: {{.Values.application.config.fin_url}}
+            - name: USER_SERVICE_HOST
+              value: {{.Values.application.config.user_url}}
+            - name: CREATE_TOPIC
+              value: {{.Values.application.config.file_create_topic}}
+            - name: UPDATE_TOPIC
+              value: {{.Values.application.config.file_update_topic}}
+            - name: DLQ_TOPIC
+              value: {{.Values.application.config.dlq_topic}}
+            - name: RESUBMIT_TOPIC
+              value: {{.Values.application.config.file_resubmit_topic}}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: encryption-keys
+                  key: JWT_SECRET
+
+
+          ports:
+            - containerPort: {{.Values.service.port}}
+          {{- if .Values.resources }}
+          resources:
+            requests:
+              memory: {{ .Values.resources.requests.memory }}
+              cpu: {{ .Values.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.resources.limits.memory }}
+              cpu: {{ .Values.resources.limits.cpu }}
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /death-services/health/liveness
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /death-services/health/readiness
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 5
+      serviceAccountName: {{ .Values.serviceAccount.name }}

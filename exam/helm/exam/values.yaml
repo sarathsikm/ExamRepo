@@ -1,0 +1,62 @@
+replicaCount: 1
+app: exam
+namespace: egov
+
+image:
+  repository: ksm-cr-death-services
+  pullPolicy: Always
+  name: 095566081345.dkr.ecr.ap-south-1.amazonaws.com/ksm-cr-death-services-dev
+  tag: latest
+
+application:
+  config:
+    database_url: jdbc:postgresql://localhost:5432/cr-local?currentSchema=ksmart
+    database_user: postgres
+    profile: dev
+
+imagePullSecrets: [ ]
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: { }
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: exam
+  roleArn: "arn:aws:iam::095566081345:role/ksm-cr-death-services-role-dev"
+
+podAnnotations: { }
+
+secretMap:
+  name: exam
+
+podSecurityContext: { }
+
+securityContext: { }
+
+service:
+  port: 8080
+  targetPort: 8080
+  targetGroupARN: "arn:aws:elasticloadbalancing:ap-south-1:095566081345:targetgroup/ksm-cr-death-services-dev/665a9bf582d00926"
+
+resources:
+  requests:
+    memory: "2000Mi"
+    cpu: "500m"
+  limits:
+    memory: "2000Mi"
+    
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: { }
+
+tolerations: [ ]
+
+affinity: { }
